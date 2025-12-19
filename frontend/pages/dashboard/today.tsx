@@ -84,6 +84,13 @@ export default function TodayDashboard() {
           + Create Task
         </a>
       </div>
+
+      <div style={{ marginBottom: "1rem" }}>
+        <a href="/dashboard/all-tasks" style={{ color: "#0070f3" }}>
+          View All Tasks →
+        </a>
+      </div>
+
       {tasks.length === 0 && <p>No tasks due today 🎉</p>}
 
       {tasks.length > 0 && (
