@@ -13,6 +13,7 @@ create table if not exists public.leads (
   full_name text,
   stage text not null default 'new',
   source text,
+  team_id uuid, -- Added for RLS requirements
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -44,14 +45,24 @@ create table if not exists public.tasks (
   tenant_id uuid not null,
   application_id uuid not null references public.applications(id) on delete cascade,
   title text,
-  type text not null,
+  type text not null check (type in ('call', 'email', 'review')),
   status text not null default 'open',
   due_at timestamptz not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint check_due_date_future check (due_at >= created_at)
 );
 
--- TODO:
--- - add check constraint for type in ('call','email','review')
--- - add constraint that due_at >= created_at
--- - add indexes for tasks due today by tenant_id, due_at, status
+-- Indexes
+-- Leads
+create index if not exists idx_leads_tenant_owner_stage on public.leads(tenant_id, owner_id, stage);
+create index if not exists idx_leads_tenant on public.leads(tenant_id); -- Optimization for tenant isolation
+create index if not exists idx_leads_stage on public.leads(stage);
+
+-- Applications
+create index if not exists idx_applications_tenant_lead on public.applications(tenant_id, lead_id);
+create index if not exists idx_applications_tenant on public.applications(tenant_id);
+
+-- Tasks
+create index if not exists idx_tasks_upcoming on public.tasks(tenant_id, due_at, status);
+create index if not exists idx_tasks_tenant on public.tasks(tenant_id);

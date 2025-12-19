@@ -12,14 +12,44 @@ alter table public.leads enable row level security;
 
 -- Example skeleton for SELECT (replace with your own logic):
 
+-- Helper function to get jwt claims (optional, but makes queries cleaner)
+-- or just inline it. We'll inline to keep it single-file simple.
+
+-- 1. SELECT Policy
+-- Counselors: see own leads OR leads in their teams
+-- Admins: see all leads in tenant
 create policy "leads_select_policy"
 on public.leads
 for select
 using (
-  true
-  -- TODO: add real RLS logic here, refer to README instructions
+  -- Tenant isolation is always required
+  tenant_id = (current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id')::uuid
+  and
+  (
+    -- Admin role check
+    (current_setting('request.jwt.claims', true)::jsonb ->> 'role') = 'admin'
+    or
+    -- Owner check
+    owner_id = (current_setting('request.jwt.claims', true)::jsonb ->> 'user_id')::uuid
+    or
+    -- Team check: Lead's team is one of the user's teams
+    team_id in (
+       select team_id from public.user_teams
+       where user_id = (current_setting('request.jwt.claims', true)::jsonb ->> 'user_id')::uuid
+    )
+  )
 );
 
--- TODO: add INSERT policy that:
--- - allows counselors/admins to insert leads for their tenant
--- - ensures tenant_id is correctly set/validated
+-- 2. INSERT Policy
+-- Counselors/Admins can insert leads for their tenant
+create policy "leads_insert_policy"
+on public.leads
+for insert
+with check (
+  -- Must be same tenant
+  tenant_id = (current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id')::uuid
+  -- Implicitly allows any authenticated user with a tenant_id to insert, assuming 'authenticated' role or similar.
+  -- If we need to strictly check 'counselor' or 'admin' role:
+  and
+  (current_setting('request.jwt.claims', true)::jsonb ->> 'role') in ('admin', 'counselor')
+);
