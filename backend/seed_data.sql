@@ -75,14 +75,16 @@ SELECT
 FROM public.applications
 OFFSET 2 LIMIT 1;
 
-INSERT INTO public.tasks (tenant_id, application_id, title, type, status, due_at)
+-- Task completed yesterday (set created_at explicitly to avoid constraint violation)
+INSERT INTO public.tasks (tenant_id, application_id, title, type, status, due_at, created_at)
 SELECT 
   '22222222-2222-2222-2222-222222222222',
   id,
   'Schedule interview call',
   'call',
   'completed',
-  NOW() - INTERVAL '1 day'
+  NOW() - INTERVAL '1 day',
+  NOW() - INTERVAL '2 days'  -- Created 2 days ago, due yesterday
 FROM public.applications
 OFFSET 3 LIMIT 1;
 
