@@ -31,9 +31,22 @@ export default function CreateTask() {
         setMessage(null);
 
         try {
+            // First, fetch the application to get tenant_id
+            const { data: application, error: appError } = await supabase
+                .from("applications")
+                .select("tenant_id")
+                .eq("id", formData.application_id)
+                .single();
+
+            if (appError || !application) {
+                throw new Error("Application not found");
+            }
+
+            // Now insert the task with tenant_id
             const { data, error } = await supabase
                 .from("tasks")
                 .insert({
+                    tenant_id: application.tenant_id,
                     application_id: formData.application_id,
                     type: formData.task_type,
                     due_at: new Date(formData.due_at).toISOString(),
