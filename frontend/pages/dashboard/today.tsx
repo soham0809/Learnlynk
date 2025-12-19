@@ -69,7 +69,21 @@ export default function TodayDashboard() {
 
   return (
     <main style={{ padding: "1.5rem" }}>
-      <h1>Today&apos;s Tasks</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <h1>Today&apos;s Tasks</h1>
+        <a
+          href="/dashboard/create-task"
+          style={{
+            padding: "0.5rem 1rem",
+            background: "#0070f3",
+            color: "white",
+            textDecoration: "none",
+            borderRadius: "5px",
+          }}
+        >
+          + Create Task
+        </a>
+      </div>
       {tasks.length === 0 && <p>No tasks due today 🎉</p>}
 
       {tasks.length > 0 && (
